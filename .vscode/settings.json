@@ -1,12 +1,18 @@
 {
     "clangd.fallbackFlags": [
-        "-I/home/kamilu/include",
+        "-I/home/kamilu/gem5/include",
         "-I/home/kamilu/gem5/src",
         "-I/home/kamilu/gem5/build/X86",
         "-I/usr/include",
         "-I/home/kamilu/gem5/ext/googletest/googletest/include",
         "-I/usr/include/hdf5/serial",
         "-I/home/kamilu/sst/include",
+        "-I/home/kamilu/gem5/ext/fputils/include/",
+        "-I/home/kamilu/gem5/ext/googletest/googlemock/include",
+        "-I/home/kamilu/gem5/ext/googletest/googletest/include",
+        "-I/home/kamilu/gem5/ext/nomali/include",
+        "-I/home/kamilu/gem5/ext/pybind11/include",
+        "-D TRACING_ON",
         "-std=c++17"
     ]
 }
