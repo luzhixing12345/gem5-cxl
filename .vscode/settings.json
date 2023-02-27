@@ -1,0 +1,12 @@
+{
+    "clangd.fallbackFlags": [
+        "-I/home/kamilu/include",
+        "-I/home/kamilu/gem5/src",
+        "-I/home/kamilu/gem5/build/X86",
+        "-I/usr/include",
+        "-I/home/kamilu/gem5/ext/googletest/googletest/include",
+        "-I/usr/include/hdf5/serial",
+        "-I/home/kamilu/sst/include",
+        "-std=c++17"
+    ]
+}
