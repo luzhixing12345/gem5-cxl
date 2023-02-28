@@ -16,22 +16,22 @@
 <body class="light">
     <div class='markdown-body'><h1>环境配置</h1><p>直接浏览gem5的源码会有很多语法提示的报错, 需要补充头文件的路径</p><p>这里以笔者的开发环境为例进行配置: Vscode + Clangd, 添加 <code>.vscode/settings.json</code></p><pre><code class="language-json">{
     "clangd.fallbackFlags": [
-        "-I/home/kamilu/gem5/include",
-        "-I/home/kamilu/gem5/src",
-        "-I/home/kamilu/gem5/build/X86",
+        "-I/home/kamilu/gem5-cxl/include",
+        "-I/home/kamilu/gem5-cxl/src",
+        "-I/home/kamilu/gem5-cxl/build/X86",
         "-I/usr/include",
-        "-I/home/kamilu/gem5/ext/googletest/googletest/include",
+        "-I/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
         "-I/usr/include/hdf5/serial",
         "-I/home/kamilu/sst/include",
-        "-I/home/kamilu/gem5/ext/fputils/include/",
-        "-I/home/kamilu/gem5/ext/googletest/googlemock/include",
-        "-I/home/kamilu/gem5/ext/googletest/googletest/include",
-        "-I/home/kamilu/gem5/ext/nomali/include",
-        "-I/home/kamilu/gem5/ext/pybind11/include",
+        "-I/home/kamilu/gem5-cxl/ext/fputils/include/",
+        "-I/home/kamilu/gem5-cxl/ext/googletest/googlemock/include",
+        "-I/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
+        "-I/home/kamilu/gem5-cxl/ext/nomali/include",
+        "-I/home/kamilu/gem5-cxl/ext/pybind11/include",
         "-D TRACING_ON",
         "-std=c++17"
     ]
-}</code></pre><p>其中 <code>/home/kamilu/gem5</code> 是gem5的根目录, 替换为你的即可</p><ul><li>初次构建使用的是 X86 架构, 构建完成后会生成 <code>build/X86</code> 目录</li></ul><ul><li><code>-D TRACING_ON</code> 是一个调试的宏, 需要在预处理阶段声明</li></ul><ul><li><code>/home/kamilu/sst/include</code> 这个路径是需要编译安装的, 可以参照 <code>ext/sst/INSTALL.md</code> 安装. 用于解决 <code>&lt;sst/core/sst_config.h&gt;</code>的头文件依赖<pre><code class="language-bash"># /home/kamilu/sst 安装位置
+}</code></pre><p>其中 <code>/home/kamilu/gem5-cxl</code> 是gem5的根目录, 替换为你的即可</p><ul><li>初次构建使用的是 X86 架构, 构建完成后会生成 <code>build/X86</code> 目录</li></ul><ul><li><code>-D TRACING_ON</code> 是一个调试的宏, 需要在预处理阶段声明</li></ul><ul><li><code>/home/kamilu/sst/include</code> 这个路径是需要编译安装的, 可以参照 <code>ext/sst/INSTALL.md</code> 安装. 用于解决 <code>&lt;sst/core/sst_config.h&gt;</code>的头文件依赖<pre><code class="language-bash"># /home/kamilu/sst 安装位置
 mkdir sst
 SST_CORE_HOME=/home/kamilu/sst
 
@@ -52,9 +52,9 @@ make all -j$(nproc)
 make install
 echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SST_CORE_HOME/lib/pkgconfig/" &gt;&gt; ~/.bashrc
 source ~/.bashrc</code></pre><p>安装之后将 <code>include/</code> 目录加入头文件路径即可</p></li></ul><ul><li><code>/usr/include/hdf5/serial</code> 路径是在初次构建gem5的时候 <code>sudo apt install libhdf5-dev</code> 安装的</li></ul><ul><li>代码中使用到了高C++标准, 需要使用std=c++17标准</li></ul><p>重启vscode之后应该是没有语法报错提示了, 当然如果去浏览 <code>src/arch</code> 下的不是X86架构的仍然会报错, 因为你需要使用 scons 构建对应架构的gem5.opt</p></div>
-    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul><ul><li><a href="../../gem5源码分析/gem5启动流程" >gem5启动流程</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
     <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
-    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5的编译和使用/全系统模拟","../../pybind11/环境配置","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5的编译和使用/全系统模拟","../../gem5源码分析/gem5启动流程","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
     <script type="module">
         const codeBlocks = document.querySelectorAll('.language-mermaid');
         codeBlocks.forEach(codeBlock => {
