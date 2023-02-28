@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>关于第一个程序</h1><p>本节中我们针对上一节提到了simple.py的代码进行详细说明</p><h2>关于语法检查</h2><p>你可能注意到你的IDE并没有对此python文件进行语法补全,语法检查,语法高亮. 你也可能会好奇第一行出现的 <code>import m5</code> 是什么,python是否缺少了这个库,又应该如何安装</p><p>实际上这里使用了pybind11这样一个python库,它可以用于将C++的模块转换为一个动态链接库.so文件,用于python的import模块调用.gem5的开发是基于M5和GEMS两个仿真器的优点进行合并的。</p><p>具体来说，M5提供了高度可配置的仿真框架、多种ISA和不同的CPU模型，而GEMS则提供了详细和灵活的内存系统，包括多种缓存一致性协议和互连模型等等。在gem5中，这些特点得以结合在一起，形成了一个功能强大的通用计算机系统模拟器。这里的M5就是我们使用的m5模块</p><blockquote><p>笔者会在代码编写部分展开pybind11的介绍</p></blockquote><h2>关于代码含义</h2><p>接下来我们仔细地看一下之前运行的代码</p><pre><code class="language-python">import m5
+from m5.objects import *</code></pre><p>前两行引用了m5文件,这里导入 m5 库和我们编译的所有 SimObjects,这里可以理解为引入了m5库,正在使用python编写代码,但库的源代码是由C++编写的,依靠pybind11转换成python库</p><pre><code class="language-python">system = System()</code></pre><p>gem5 的模块化设计是围绕 <code>SimObject</code> 类型构建的。模拟系统中的大部分组件都是 SimObjects：CPU、缓存、内存控制器、总线等。gem5 将所有这些对象从它们的C++实现导出到 python。因此可以创建任何 SimObject，设置其参数，并指定 SimObjects 之间的交互</p><p>模块的代码均保存在 <code>src/sim</code> 文件夹下, <code>System</code> 类的声明与实现在 <code>build/X86/sim/system.hh</code> <code>build/X86/sim/system.cc</code></p><blockquote><p>笔者注: 由于整个系统过于庞大,笔者将编译之后的<code>build/X86/</code>文件夹复制出来保存到了 <code>/root/X86</code>,所以以下路径均做替换</p></blockquote><p>该System对象将成为我们模拟系统中所有其他对象的父对象。该System对象包含大量功能（非时序级）信息，如物理内存范围、根时钟域、根电压域、内核（在全系统仿真中）等</p><p>接下来在系统中创建一个时钟域。然后我们可以在该域上设置时钟频率. 这里设置参数的方式与python设置对象成员完全相同</p><p>使用<code>SrcClockDomain</code>创建一个对象,将时钟设置为 1 GHz,并且为这个时钟域指定一个电压域</p><blockquote><p>/root/X86/params/SrcClockDomain.hh /root/X86/sim/clock_domain.hh</p></blockquote><pre><code class="language-python">system.clk_domain = SrcClockDomain()
+system.clk_domain.clock = '1GHz'
+system.clk_domain.voltage_domain = VoltageDomain()</code></pre><p>接下来使用时序模式进行内存模拟,并且设置512MB的内存范围</p><pre><code class="language-python">system.mem_mode = 'timing'
+system.mem_ranges = [AddrRange('512MB')]</code></pre><p>接下来创建一个基于时序的CPU,这种 CPU 模型在单个时钟周期内执行每条指令,然后创建系统范围的内存总线</p><pre><code class="language-python">system.cpu = TimingSimpleCPU()
+system.membus = SystemXBar()</code></pre><p>有了内存总线之后,将CPU的缓存端口连接到总线,但是由于现在模拟的系统中并没有缓存,所以直接将I-cache 和 D-cache 端口直接连接到总线</p><pre><code class="language-python">system.cpu.icache_port = system.membus.cpu_side_ports
+system.cpu.dcache_port = system.membus.cpu_side_ports</code></pre><p>为了将内存系统组件连接在一起，gem5 使用端口抽象。每个内存对象可以有两种端口， 请求端口和响应端口。请求从请求端口发送到响应端口，响应从响应端口发送到请求端口。连接端口时，必须将请求端口连接到响应端口</p><p>通过 python 配置文件很容易将端口连接在一起。您可以简单地将请求端口设置=为响应端口，它们将被连接</p><blockquote><p>值得一提的是这里的连接直接使用了 <code>=</code>,这并不意味着上文的<code>system.cpu.icache_port = system.membus.cpu_side_ports</code>被覆盖,被断开.建立连接的幕后有很多魔法，其中的细节对大多数用户来说并不重要.在初学阶段你可以理解为这里使用getter和setter做了特殊处理,对于<code>=</code>的运算符重载,使得添加了一组连接而不是覆盖</p></blockquote><p>5 Python 配置中两个端口的另一种值得注意的是允许在一侧有一个端口，在另一侧有一组端口</p><pre><code class="language-python">system.cpu.icache_port = system.membus.cpu_side_ports</code></pre><p><code>cpu.icache_port</code>是一个请求端口，而 <code>membus.cpu_side_ports</code> 是一个响应端口数组。在这种情况下，会在 上生成一个新的响应端口<code>cpu_side_ports</code>,并且这个新创建的端口将连接到请求端口</p><blockquote><p>更多的关于端口的细节我们将在<a href="https://www.gem5.org/documentation/learning_gem5/part2/memoryobject/" target="_blank">MemObject</a>中讨论</p></blockquote><p>接下来需要连接其他几个端口以确保我们的系统能够正常运行,创建一个 I/O 控制器并将其连接到内存总线,并加入中断的控制信号</p><pre><code class="language-python">system.cpu.createInterruptController()
+system.cpu.interrupts[0].pio = system.membus.mem_side_ports
+system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
+system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
+
+system.system_port = system.membus.cpu_side_ports</code></pre><p>然后需要创建一个内存控制器并将其连接到内存总线。对于这个系统，我们将使用一个简单的 DDR3 控制器，它将负责我们系统的整个内存范围</p><pre><code class="language-python">system.mem_ctrl = MemCtrl()
+system.mem_ctrl.dram = DDR3_1600_8x8()
+system.mem_ctrl.dram.range = system.mem_ranges[0]
+system.mem_ctrl.port = system.membus.mem_side_ports</code></pre><p>现在,我们已经完成了模拟系统的实例化,整个系统如下图所示</p><p><img src="https://raw.githubusercontent.com/learner-lu/picbed/master/20221118195120.png" alt="20221118195120"></p><p>然后设置期望CPU执行的程序,只需要将CPU指向已编译的可执行文件</p><pre><code class="language-python">binary = 'tests/test-progs/hello/bin/x86/linux/hello'</code></pre><p>这个文件是随gem5一同编译的可执行文件,我们可以直接运行此程序输出 <code>Hello world!</code></p><h2>完整系统与系统调用仿真</h2><p>在介绍下一行代码之前,我们先来介绍一下gem5的两种模拟模式: <b>系统调用仿真模式</b> 和 <b>全系统模式</b></p><pre><code class="language-python">system.workload = SEWorkload.init_compatible(binary)</code></pre><p>系统调用仿真模式：在该模式下，gem5只模拟应用程序和操作系统之间的接口，即系统调用。这种模拟模式适用于分析和优化特定的应用程序或者操作系统。在这种模式下，gem5会在宿主操作系统上运行应用程序，当应用程序需要调用系统调用时，gem5会截取这个系统调用并使用gem5内置的操作系统模拟器进行模拟。这种模拟模式运行起来比较快，因为只有应用程序和操作系统之间的接口需要模拟。</p><p>全系统模式：在该模式下，gem5模拟了整个计算机系统，包括操作系统和硬件设备。这种模拟模式适用于研究计算机体系结构和操作系统之间的相互作用。在这种模拟模式下，gem5会启动一个完整的操作系统，并在操作系统上运行应用程序，模拟整个计算机系统的行为。这种模拟模式需要模拟更多的硬件和软件组件，因此比系统调用仿真模式慢。</p><p>总之，gem5的系统调用仿真模式适用于分析和优化特定的应用程序或者操作系统，而全系统模式适用于研究计算机体系结构和操作系统之间的相互作用。用户可以根据自己的需要选择适合的模拟模式。</p><p>系统调用仿真更容易配置,因为不需要设立话真是系统中的所有硬件设备,并且SE仅仅模拟Linux系统调用,即用户模式代码</p><p><b>如果您不需要为您的研究问题对操作系统建模，并且您想要额外的性能，您应该使用 SE 模式。但是，如果您需要系统的高保真建模，或者像页表遍历这样的操作系统交互很重要，那么您应该使用 FS 模式</b></p><p>那么为了执行这个程序,我们需要创建一个进程(Process),并且将进程命令设置为这个可执行文件</p><pre><code class="language-python">process = Process()
+process.cmd = [binary]</code></pre><blockquote><p>cmd 是一个类似于 argv 的列表，可执行文件位于第一个位置，可执行文件的参数位于列表的其余部分</p></blockquote><p>然后我们将 CPU 设置为使用进程作为它的工作负载，最后在 CPU 中创建功能执行上下文</p><pre><code class="language-python">system.cpu.workload = process
+system.cpu.createThreads()</code></pre><p>需要做的最后一件事是实例化系统并开始执行,我们创建Root对象。然后我们实例化模拟。实例化过程遍历我们在 python 中创建的所有 SimObjects 并创建C++等价物</p><pre><code class="language-python">root = Root(full_system = False, system = system)
+m5.instantiate()</code></pre><p>最后，我们可以开始实际的模拟了!</p><pre><code class="language-python">print("Beginning simulation!")
+exit_event = m5.simulate()</code></pre><p>一旦模拟完成，我们就可以检查系统的状态</p><pre><code class="language-python">print('Exiting @ tick {} because {}'
+      .format(m5.curTick(), exit_event.getCause()))</code></pre><p>到这里第一个入门程序就结束了,小巧精简. 总结来说gem5的使用流程是</p><ul><li>创建System对象</li></ul><ul><li>为系统创建时钟,创建内存,创建CPU</li></ul><ul><li>创建并将CPU的端口连接到总线</li></ul><ul><li>创建IO控制器和内存控制器,并且连接到总线</li></ul><ul><li>使系统工作在SE模式下,并且选定需要执行的程序创建进程</li></ul><ul><li>使CPU负载该进程,使用Root实例化系统并创建所有C++对象</li></ul><ul><li>开始模拟</li></ul><p>可以看出是一个非常小巧的计算机,借助CPU,内存,总线完成基本硬件配置,创建进程并交由CPU模拟执行</p></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5的编译和使用/第一个程序","../../gem5的编译和使用/全系统模拟","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

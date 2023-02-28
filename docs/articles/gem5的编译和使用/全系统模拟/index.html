@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>全系统模拟</h1><p>全系统模拟一共需要三部分</p><ul><li>gem5.opt</li></ul><ul><li>内核镜像</li></ul><ul><li>磁盘镜像</li></ul><p>不过我们并不需要所有都自己编译,gem5提供了不同处理器架构的预编译文件,可以在<a href="https://gem5.googlesource.com/public/gem5-resources/" target="_blank">gem5 resource</a>中搜索需要的文件</p><h2>获取资源</h2><ul><li>已经编译gem5.opt,当前位于 gem5 根目录,编译得到X86架构的 <code>build/X86/gem5.opt</code></li></ul><ul><li>获取内核镜像<pre><code class="language-bash">wget http://dist.gem5.org/dist/v22-0/kernels/x86/static/vmlinux-4.4.186</code></pre><p>这里使用的是预编译过的 4.4.186 linux内核,当然也可以选择其他版本比如<a href="http://dist.gem5.org/dist/v22-0/kernels/x86/static/vmlinux-4.19.83" target="_blank">4.19.83</a></p><p>如果需要其他内核版本则需要自行编译Linux内核,请参考<a href="https://luzhixing12345.github.io/2023/01/02/Linux/Linux%E5%86%85%E6%A0%B8%E7%BC%96%E8%AF%91/" target="_blank">Linux 内核编译</a>编译得到根目录下的vmlinux</p></li></ul><ul><li>获取磁盘镜像<p>磁盘镜像解压之后稍微有点大,大概25GB左右</p><pre><code class="language-bash">wget http://dist.gem5.org/dist/v22-0/images/x86/ubuntu-18-04/parsec.img.gz
+gzip -d parsec.img.gz</code></pre></li></ul><h2>开始全系统模拟</h2><ul><li>创建目录<pre><code class="language-bash">mkdir full-system-image
+mkdir full-system-image/disks
+mkdir full-system-image/kernel
+cp vmlinux-4.4.186 full-system-image/kernel
+cp parsec.img full-system-image/disks
+# 保存模拟结果
+mkdir fs-result</code></pre><p>这里的 <code>disks</code> 和 <code>kernel</code> 目录名不要修改</p></li></ul><ul><li>配置全局M5_PATH<pre><code class="language-bash">vim ~/.bashrc</code></pre><p>添加full-system-image的路径,假定gem5目录保存在~下</p><pre><code class="language-bash">export M5_PATH=~/gem5/full-system-image</code></pre><pre><code class="language-bash">source ~/.bashrc</code></pre></li></ul><ul><li>修改路径信息<pre><code class="language-bash">vim configs/common/SysPaths.py</code></pre><p>找到 <code>paths=['dist/m5/system', 'n/poolfs/z/dist/m5/system']</code> 将第二个路径修改为full-system-image目录</p><pre><code class="language-python">paths=['dist/m5/system', '~/gem5/full-system-image']</code></pre></li></ul><ul><li>开始模拟<pre><code class="language-bash">build/X86/gem5.opt -d fs-result configs/example/fs.py --disk=full-system-image/disks/parsec.img --kernel=full-system-image/kernel/vmlinux-4.4.186 --num-cpus=2</code></pre><blockquote><p>这里的-d后面是全系统模拟结果的目录,默认是m5out, --disk和--kernel则分别是磁盘和内核的路径</p></blockquote><p>此时开始模拟,终端会输出一些信息,我们新开一个终端然后登录端口等待.</p><pre><code class="language-bash">telnet localhost 3456</code></pre><p>初次启动全系统模拟需要等待很长一段时间,之后就会进入bash了,这里的交互操作响应是很缓慢的</p></li></ul><ul><li>保存checkpoint<p>每次都重新模拟太慢了,我们可以保存checkpoint以便后续快速进入,也可以保存所做的修改</p><pre><code class="language-bash">m5 checkpoint</code></pre><p>另外除了在启动的系统中通过m5提供的指令手动创建checkpoint外，gem5代码库中还提供了一个脚本用于自动创建checkpoint。只需要在启动模拟的命令行中加入该参数并指定所用脚本即可。创建checkpoint所用脚本为configs/boot目录下的hack_back_ckpt.rcS，只需要在命令行中添加--script参数并指定为该值</p><pre><code class="language-bash">build/X86/gem5.opt -d fs-result configs/example/fs.py --disk=full-system-image/disks/parsec.img --kernel=full-system-image/kernel/vmlinux-4.4.186 --num-cpus=2 --script=configs/boot/hack_back_ckpt.rcS</code></pre></li></ul><ul><li>退出<pre><code class="language-bash">m5 exit</code></pre><blockquote><p>如果只是推出telnet的话使用 <kbd>ctrl</kbd> + <kbd>d</kbd> 后输入quit即可.</p></blockquote></li></ul><ul><li>使用checkpoint进入<pre><code class="language-bash">build/X86/gem5.opt -d fs-result configs/example/fs.py --num-cpus=2 --checkpoint-dir=fs-result -r 1 -restore-with-cpu=O3CPU</code></pre><p>这里的<code>--checkpoint-dir</code>为checkpoint保存的路径, <code>-r</code>参数用于指定哪个checkpoint，1即为第一个checkpoint，当指定的目录中有多个checkpoint时，多个checkpoint的排序是按照系统创建checkpoint的ticks进行排序的</p></li></ul><h2>修改磁盘镜像</h2><p>由于在全系统模拟中操作起来实在是太慢了,所以很多时候我们需要将一些文件提前放到磁盘中,或者预先编译一些代码.这里可以使用挂载的方式修改磁盘文件</p><p>我们这里使用之前下载的 <code>full-system-image/disks/parsec.img</code> 磁盘镜像</p><pre><code class="language-bash">cd full-system-image/disks
+# 在disks目录下创建一个挂载镜像文件的目录
+mkdir local_mnt
+sudo mount -o loop,offset=$((2048*512)) parsec.img local_mnt
+cd local_mnt</code></pre><p>接下来就可以操作了,比如这里我们在 /home 下创建一个文件</p><pre><code class="language-bash">echo "hello world" &gt; /home/test.txt</code></pre><p>修改结束后取消挂载即可</p><pre><code class="language-bash">cd ..
+sudo umount local_mnt</code></pre><p>此时<code>parsec.img</code>就已经被修改了,我们再次启动全系统模拟就可以了</p></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5的编译和使用/关于第一个程序","../../gem5源码分析/环境配置","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

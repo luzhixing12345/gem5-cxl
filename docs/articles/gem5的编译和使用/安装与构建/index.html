@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>安装与构建</h1><p>gem5的安装是及其头痛的,由于gem5并未提供发行版而是采用了源码编译的方式,笔者付出了相当多的编译等待时间和错误处理时间</p><h2>标准构建方式</h2><p>使用Ubuntu22.04操作系统,双系统,英文语言,gcc版本11.3.0,32G交换区</p><p>gem5的编译强烈建议使用双系统,在虚拟机中启动gem5模拟有点太慢了</p><p><b>内存分配至少8GB</b>,不然编译可能因为内存不足而失败.<b>不要使用低版本gcc</b></p><ul><li>安装依赖之前<pre><code class="language-bash">sudo apt update
+sudo apt install vim</code></pre></li></ul><ul><li>安装依赖<pre><code class="language-bash">sudo apt install build-essential git m4 scons zlib1g zlib1g-dev \
+    libprotobuf-dev protobuf-compiler libprotoc-dev libgoogle-perftools-dev \
+    python3-dev python-is-python3 libboost-all-dev pkg-config libhdf5-dev libpng-dev</code></pre></li></ul><ul><li>克隆代码<pre><code class="language-bash">git clone https://gem5.googlesource.com/public/gem5</code></pre><p>如果还没配置代理则使用如下gitee源</p><pre><code class="language-bash">git clone https://gitee.com/koverlu/gem5.git
+# git clone -c http.sslVerify=false https://gitee.com/koverlu/gem5.git/</code></pre></li></ul><ul><li>进入目录并开始编译<pre><code class="language-bash">cd gem5
+scons build/X86/gem5.opt -j 4</code></pre><blockquote><p>最后j后面的数字为开启的线程数,并无大影响,改为2,8都可以</p></blockquote></li></ul><ul><li>等待一段时间,最后编译成功, 没有任何warnning<pre><code class="language-bash">...
+scons: done building targets</code></pre><p>可以在 <code>gem5/build/X86/</code>下找到 <code>gem5.opt</code></p><p><img src="https://raw.githubusercontent.com/learner-lu/picbed/master/20221113102230.png" alt="20221113102230"></p></li></ul><h2>可能遇到的问题</h2><p>这里总结一下笔者初次编译时遇到的诸多问题</p><ol start="1"><li>选择构建的系统和 gcc 版本<p>官方推荐使用的Ubuntu操作系统(本机或者服务器,不推荐虚拟机). 笔者个人的服务器是Debian10,gcc版本为 8.3.0 ,2核2G.尽管官方给出的gcc要求如下</p><pre><code class="language-bash">gcc: gcc is used to compiled gem5. Version &gt;=7 must be used. We support up to gcc Version 11.</code></pre><p>但实际上如果不使用gcc11进行编译会报如下的一个警告,然后在最后链接显示失败</p><pre><code class="language-bash">Warning:
+      Deprecated namespaces are not supported by this compiler.</code></pre><p><img src="https://raw.githubusercontent.com/learner-lu/picbed/master/217302a0c1001c0821d89a3f3d973bf.png" alt="217302a0c1001c0821d89a3f3d973bf"></p><p>所以推荐直接使用Ubuntu22.04,默认安装的gcc 11.3.0,不会出现此问题</p><p>笔者也尝试Debian去安装高版本gcc结果失败,似乎只能从源码编译,但这一过程又太过麻烦,故放弃</p><p>笔者也尝试了使用docker镜像创建容器去编译,但由于服务器内存不足在最后链接的过程失败</p><p><b>解决办法</b>: 最后笔者选择了使用本机安装Win11与Ubuntu22.04双系统,分配了8GB swap area,成功编译</p><p><b>注意</b>,Ubuntu系统安装请务必使用 <b>英文</b>, 中文系统会在编译初期产生如下报错</p><pre><code class="language-bash">pybind11::error_already_set
+what(): UnicodeDecodeError: 'ascii' codec an't decode byte 0xe6 in position 78:ordinal not in range(128</code></pre><p>暂时未找到直接的解决办法,笔者的解决办法是重装系统,语言选择英语.后期再去下中文输入法</p><blockquote><p>如果没有装过双系统可以参考<a href="https://luzhixing12345.github.io/2022/11/15/%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%8F%8C%E7%B3%BB%E7%BB%9F%E5%AE%89%E8%A3%85/" target="_blank">双系统安装</a></p></blockquote></li></ol><ol start="2"><li>两个warnning<pre><code class="language-bash">Warning: Header file &lt;png.h&gt; not found.
+            This host has no libpng library.
+            Disabling support for PNG framebuffers.
+Checking for clock_nanosleep(0,0,NULL,NULL) in C library None... yes
+Checking for C header file valgrind/valgrind.h... no
+Checking for pkg-config package hdf5-serial... no
+Checking for pkg-config package hdf5... no
+Checking for H5Fcreate("", 0, 0, 0) in C library hdf5... no
+Warning: Couldn't find HDF5 C++ libraries. Disabling HDF5 support.</code></pre><p>如果出现如上的两个警告则还需要安装两个库</p><pre><code class="language-bash">sudo apt-get install libhdf5-dev
+sudo apt-get install libpng-dev</code></pre><blockquote><p>笔者这里已经贴心的将其加入到 <code>安装依赖</code> 所需的库的最后了</p></blockquote></li></ol><ol start="3"><li>Python 找不到<pre><code class="language-bash">Error: Can't find a suitable python-config, tried ['python3-config','python-config']</code></pre><pre><code class="language-bash">Python not installion
+# 这个具体有点记不清了，大致意思就是说找不到python</code></pre><p>这个很有可能是因为当前处于anaconda的虚拟环境,这里的安装需要使用系统的python3来进行安装.可使用如下命令退出conda环境</p><pre><code class="language-bash">conda deactivate</code></pre><p>或者此时应该会出现黄色的提示,提醒你指出使用的python的绝对路径,按其提示即可</p></li></ol><ol start="4"><li>python版本不对<p>可以使用如下命令代替 <code>scons build/X86/gem5.opt -j4</code></p><pre><code class="language-bash">python3 `which scons` build/X86/gem5.opt </code></pre><p>Ubuntu为了向前兼容默认是python2,需要使用python3</p></li></ol><ol start="5"><li>其他问题<p>这些问题笔者并没有经历,官网给出了构建过程中可能出现的一些问题的解答</p><pre><code class="language-bash">M4 macro processor not installed
+Protobuf 3.12.3 problem
+Wrong gcc version</code></pre><p>或许你可以在 <a href="https://www.gem5.org/documentation/learning_gem5/part1/building/" target="_blank">https://www.gem5.org/documentation/learning_gem5/part1/building/</a> 找到答案</p><p>除此之外你可以到<a href="https://www.mail-archive.com/gem5-users@gem5.org/" target="_blank">gem5-user</a>去查询相关回答</p></li></ol></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5的编译和使用/gem5简介","../../gem5的编译和使用/第一个程序","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

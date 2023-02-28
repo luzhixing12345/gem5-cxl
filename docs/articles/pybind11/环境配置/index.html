@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>环境配置</h1><h2>安装与头文件位置</h2><p>pybind11的安装非常简单</p><pre><code class="language-bash">pip install pybind11</code></pre><p>pybind11的安装非常简单,其包含的文件大部分为头文件(有函数实现的头文件),你可以通过如下命令找到下载的pybind11包的位置</p><pre><code class="language-bash">python3 -m pybind11 --includes
+
+# conda 环境结果
+# -I/root/anaconda3/include/python3.9 -I/root/anaconda3/lib/python3.9/site-packages/pybind11/include
+
+# 系统环境结果
+# -I/usr/include/python3.7m -I/usr/local/lib/python3.7/dist-packages/pybind11/include</code></pre><p>其中include的子目录就是我们需要引用的位置</p><p>这里简单解释一下, python -m 参数是将库中的python模块用作脚本去运行,通常我们使用import当做模块来启动,这里是直接运行了这个模块</p><p>注意到第一个路径是python解释器的路径,第二个路径是pybind11的路径,进入这个路径查看 <code>__main__.py</code> 文件</p><p><img src="https://raw.githubusercontent.com/learner-lu/picbed/master/20221116150855.png" alt="20221116150855"></p><p>可以看到 <code>--includes</code> 参数即输出了get_include的路径</p><blockquote><p>在 <code>command.py</code> 中可以找到三个函数 <code>get_include</code> <code>get_cmake_dir</code> <code>get_pkgconfig_dir</code> 分别对应pip cmake vcpkg的安装方式,其结果相同,这里不再赘述</p></blockquote><h2>第一个程序</h2><p>创建一个文件 <code>example.cpp</code></p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+int add(int i, int j) {
+    return i + j;
+}
+
+PYBIND11_MODULE(example, m) {
+    m.doc() = "pybind11 example plugin"; // optional module docstring
+    m.def("add", &add, "A function that adds two numbers");
+}</code></pre><p>保存之后使用如下命令编译</p><pre><code class="language-bash">c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) example.cpp -o example$(python3-config --extension-suffix)</code></pre><p>成功编译结束之后可以得到文件 <code>example.cpython-39-x86_64-linux-gnu.so</code></p><p>现在就可以通过python调用example中的函数了</p><pre><code class="language-python">import example
+
+print(example.add(10,20))
+# 30</code></pre><h2>代码环境配置</h2><h3>头文件代码提示</h3><p>在进入pybind11学习之前我们需要配置一下开发中使用的环境,比如代码补全,代码提示. 由于笔者使用的是vscode+clangd,这里以它为例,如果读者使用的是其他工具,其原理类似也可借鉴</p><p>首先是开头的 <code>#include &lt;pybind11/pybind11.h&gt;</code> 会飘红, 我们可以在目录下新建 <code>.vscode/settings.json</code>,加入include的路径即可,加入之前查看到的两个路径,分别是pybind11的头文件和python的头文件</p><pre><code class="language-json">{
+    "clangd.fallbackFlags": [
+        "-I/root/anaconda3/lib/python3.9/site-packages/pybind11/include",
+        "-I/root/anaconda3/include/python3.9"
+    ]
+}</code></pre><p>重启vscode之后就可以看到没有错误提示了</p><p><img src="https://raw.githubusercontent.com/learner-lu/picbed/master/20221116155240.png" alt="20221116155240"></p><h3>编译命令简化</h3><p>注意到官方提到的编译方式比较粗暴,使用了 <code>$(python3 -m pybind11 --includes)</code> 将需要的头文件的路径引入,最后使用了 <code>python3-config --extension-suffix</code> (用于查看当前python版本/平台信息) 输出结果</p><p>对于头文件我们可以直接将其路径放到环境变量中,避免每一次都需要手动指定</p><pre><code class="language-bash"># 添加到~/.bashrc
+export CPATH=/root/anaconda3/lib/python3.9/site-packages/pybind11/include:/root/anaconda3/include/python3.9:$CPATH
+# 激活环境
+source ~/.bashrc</code></pre><p>最后的输出也没有必要那么复杂,直接动态库 <code>.so</code> 就可以了</p><pre><code class="language-bash">g++ -O3 -Wall -shared -std=c++11 -fPIC example.cpp -o example.so</code></pre><p>可以得到相同的结果</p><p>当然,对于多文件等更为复杂的方式,留到后面与cmake配合构建</p></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5源码分析/环境配置","../../pybind11/基础语法","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

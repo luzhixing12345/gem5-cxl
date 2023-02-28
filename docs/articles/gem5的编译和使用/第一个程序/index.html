@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>创建一个简单的配置脚本</h1><h2>运行第一个程序</h2><p>本教程的这一章将引导您了解如何为 gem5 设置一个简单的模拟脚本并首次运行 gem5。假设您已经完成了教程的第一章，并且已经成功构建了带有可执行文件的 gem5 (build/X86/gem5.opt)</p><p>在<code>gem5/</code>根目录新建一个文件命名为 <code>simple.py</code>, 复制如下代码</p><pre><code class="language-python">import m5
+from m5.objects import *
+
+system = System()
+system.clk_domain = SrcClockDomain()
+system.clk_domain.clock = '1GHz'
+system.clk_domain.voltage_domain = VoltageDomain()
+
+system.mem_mode = 'timing'
+system.mem_ranges = [AddrRange('512MB')]
+
+system.cpu = TimingSimpleCPU()
+system.membus = SystemXBar()
+system.cpu.icache_port = system.membus.cpu_side_ports
+system.cpu.dcache_port = system.membus.cpu_side_ports
+
+system.cpu.createInterruptController()
+system.cpu.interrupts[0].pio = system.membus.mem_side_ports
+system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
+system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
+
+system.system_port = system.membus.cpu_side_ports
+system.mem_ctrl = MemCtrl()
+system.mem_ctrl.dram = DDR3_1600_8x8()
+system.mem_ctrl.dram.range = system.mem_ranges[0]
+system.mem_ctrl.port = system.membus.mem_side_ports
+
+binary = 'tests/test-progs/hello/bin/x86/linux/hello'
+
+# for gem5 V21 and beyond
+system.workload = SEWorkload.init_compatible(binary)
+
+process = Process()
+process.cmd = [binary]
+system.cpu.workload = process
+system.cpu.createThreads()
+
+root = Root(full_system = False, system = system)
+m5.instantiate()
+print("Beginning simulation!")
+exit_event = m5.simulate()
+print('Exiting @ tick {} because {}'
+      .format(m5.curTick(), exit_event.getCause()))</code></pre><p>执行如下指令,注意代码中引用了一个文件 <code>binary = 'tests/test-progs/hello/bin/x86/linux/hello'</code>,这个文件是在 <code>gem5/test</code> 文件夹下,所以执行此命令时需要在<code>/gem5</code>根目录下</p><pre><code class="language-bash">build/X86/gem5.opt simple.py</code></pre><p>如果一切正常,你会得到如下输出 Hello world!(以下内容是在我本机电脑运行的结果)</p><pre><code class="language-bash">gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 21.2.1.1
+gem5 compiled Nov 12 2022 14:33:36
+gem5 started Nov 27 2022 21:59:18
+gem5 executing on kamilu-Inspiron-16-7610, pid 15638
+command line: build/X86/gem5.opt simple.py
+
+Global frequency set at 1000000000000 ticks per second
+warn: No dot file generated. Please install pydot to generate the dot file and pdf.
+build/X86/mem/mem_interface.cc:791: warn: DRAM device capacity (8192 Mbytes) does not match the address range assigned (1024 Mbytes)
+0: system.remote_gdb: listening for remote gdb on port 7000
+Beginning simulation!
+build/X86/sim/simulate.cc:194: info: Entering event queue @ 0.  Starting simulation...
+Hello world!
+Exiting @ tick 454646000 because exiting with last active thread context</code></pre><p>恭喜你,你已经成功了使用gem5执行了一个程序</p></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5的编译和使用/安装与构建","../../gem5的编译和使用/关于第一个程序","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

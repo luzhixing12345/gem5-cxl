@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>面向对象</h1><h2>面向对象</h2><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    void setName(const std::string &name_) { name = name_; }
+    const std::string &getName() const { return name; }
+    std::string name;
+};
+
+PYBIND11_MODULE(classs, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+        .def(py::init&lt;const std::string &&gt;())
+        .def("setName", &Pet::setName)
+        .def("getName", &Pet::getName);
+}</code></pre><p>绑定构造函数,定义的函数的方式如上</p><p>编译(文件名为class.cpp)</p><pre><code class="language-bash">g++ -O3 -Wall -shared -std=c++11 -fPIC class.cpp -o classs.so</code></pre><pre><code class="language-bash">(base) root@hecs-67846:~/pybind11-code# python
+Python 3.9.12 (main, Apr  5 2022, 06:56:58)
+[GCC 7.5.0] :: Anaconda, Inc. on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; import classs
+&gt;&gt;&gt; p = classs.Pet("Molly")
+&gt;&gt;&gt; print(p)
+&lt;classs.Pet object at 0x7fe21b234030&gt;
+&gt;&gt;&gt; p.getName()
+'Molly'
+&gt;&gt;&gt; p.setName("Charly")
+&gt;&gt;&gt; p.getName()
+'Charly'
+&gt;&gt;&gt; ?</code></pre><h2>魔法函数</h2><p>对于python的一些魔法函数,比如 <code>__repr__</code> 可以借助lambda表达式实现</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    void setName(const std::string &name_) { name = name_; }
+    const std::string &getName() const { return name; }
+    std::string name;
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+        .def(py::init&lt;const std::string &&gt;())
+        .def("setName", &Pet::setName)
+        .def("getName", &Pet::getName)
+        .def("__repr__",
+            [](const Pet &a) {
+                return "__repr__ named '" + a.name;
+            }
+        );
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.Pet("Monika")
+print(p)
+# __repr__ named 'Monika</code></pre><p>并不是所有魔法函数都可以,实际上也没有必要非得去使用</p><h2>静态字段</h2><p>可以使用 <code>class_::def_readwrite()</code> 直接暴露字段</p><blockquote><p>也有只读方法 <code>class_::def_readonly()</code></p></blockquote><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    void setName(const std::string &name_) { name = name_; }
+    const std::string &getName() const { return name; }
+    std::string name;
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+        .def(py::init&lt;const std::string &&gt;())
+        .def("setName", &Pet::setName)
+        .def("getName", &Pet::getName)
+        .def_readwrite("name", &Pet::name);
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.Pet("Monika")
+print(p.getName())
+p.name = "Jack"
+print(p.name)
+
+# Monika
+# Jack</code></pre><h2>private</h2><p>对于private变量,如果其存在getter和setter也可以使用 <code>class_::def_property()</code> 透明地调用 setter 和 getter 函数</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    void setName(const std::string &name_) { 
+        printf("called setter\n");
+        name = name_;
+    }
+    const std::string &getName() const { 
+        printf("called getter\n");
+        return name;
+    }
+    std::string name;
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+        .def(py::init&lt;const std::string &&gt;())
+        .def_property("name", &Pet::getName, &Pet::setName);
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.Pet("Monika")
+p.name = "Jack"
+print(p.name)
+
+# called setter
+# called getter
+# Jack</code></pre><blockquote><p>对于只写属性可以使用nullptr</p><pre><code class="language-cpp">.def_property("name", nullptr, &Pet::setName);</code></pre><p>除此之外还有一些类似的函数用于<a href="https://pybind11.readthedocs.io/en/stable/advanced/classes.html#static-properties" target="_blank">静态属性</a></p></blockquote><h2>动态属性</h2><p>python支持动态属性添加,但是pybind11默认不支持,需要添加构造函数 <code>py::dynamic_attr()</code> 标记</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    void setName(const std::string &name_) { name = name_;}
+    const std::string &getName() const { return name;}
+    std::string name;
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet",py::dynamic_attr())
+        .def(py::init&lt;const std::string &&gt;())
+        .def_property("name", &Pet::getName, &Pet::setName);
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.Pet("Monika")
+p.name = "Jack"
+p.age = 18
+print(p.name)
+print(p.age)
+
+# Jack
+# 18</code></pre><pre><code class="language-tip">启用动态属性会造成运行耗时增加,不仅仅因为添加了 `__dict__` , 还因为需要激活垃圾回收跟踪.
+
+默认情况下，pybind11 类比本机 Python 类更高效。启用动态属性只会使它们处于同等水平</code></pre><h2>继承</h2><p>对于继承关系的构建有两种方式,这里只推荐第一种方式</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    std::string name;
+};
+
+struct Dog : Pet {
+    Dog(const std::string &name) : Pet(name) { }
+    std::string bark() const { return "woof!"; }
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+    .def(py::init&lt;const std::string &&gt;())
+    .def_readwrite("name", &Pet::name);
+    // Method 1: template parameter:
+    py::class_&lt;Dog, Pet&gt;(m, "Dog")
+        .def(py::init&lt;const std::string &&gt;())
+        .def("bark", &Dog::bark);
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.Dog("Monika")
+print(p.name)
+print(p.bark())
+
+# Monika
+# woof!</code></pre><h2>多态与虚函数</h2><p>pybind11种使用多态的情况与C++相同</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name) : name(name) { }
+    std::string name;
+};
+
+struct Dog : Pet {
+    Dog(const std::string &name) : Pet(name) { }
+    std::string bark() const { return "woof!"; }
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+    .def(py::init&lt;const std::string &&gt;())
+    .def_readwrite("name", &Pet::name);
+    // Method 1: template parameter:
+    py::class_&lt;Dog, Pet&gt;(m, "Dog")
+        .def(py::init&lt;const std::string &&gt;())
+        .def("bark", &Dog::bark);
+    m.def("pet_store", []() { return std::unique_ptr&lt;Pet&gt;(new Dog("Molly")); });
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.pet_store()
+print(type(p))
+print(p.name)
+print(p.bark())
+
+# output
+&lt;class 'cla.Pet'&gt;
+Molly
+Traceback (most recent call last):
+  File "/root/pybind11-code/test.py", line 6, in &lt;module&gt;
+    print(p.bark())
+AttributeError: 'cla.Pet' object has no attribute 'bark'</code></pre><p>该函数返回了一个Dog实例，但因为它是基指针后面的非多态类型. 这里的 <code>std::unique_ptr&lt;Pet&gt;</code> 指针类型无法使用子类的bark函数,在 C++ 中，只有至少有一个虚函数的类型才被认为是多态的，pybind11 会自动识别这一点</p><p>添加虚函数即可解决此问题,这与C++的用法一致</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    virtual ~Pet() = default;
+    Pet(const std::string &name) : name(name) { }
+    std::string name;
+};
+
+struct Dog : Pet {
+    Dog(const std::string &name) : Pet(name) { }
+    std::string bark() const { return "woof!"; }
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+    .def(py::init&lt;const std::string &&gt;())
+    .def_readwrite("name", &Pet::name);
+    // Method 1: template parameter:
+    py::class_&lt;Dog, Pet&gt;(m, "Dog")
+        .def(py::init&lt;const std::string &&gt;())
+        .def("bark", &Dog::bark);
+    m.def("pet_store", []() { return std::unique_ptr&lt;Pet&gt;(new Dog("Molly")); });
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.pet_store()
+print(type(p))
+print(p.name)
+print(p.bark())
+
+# &lt;class 'cla.Dog'&gt;
+# Molly
+# woof!</code></pre><h2>重载</h2><p>对于C++中的重载</p><pre><code class="language-cpp">struct Pet {
+    Pet(const std::string &name, int age) : name(name), age(age) { }
+    void set(int age_) { age = age_; }
+    void set(const std::string &name_) { name = name_; }
+    std::string name;
+    int age;
+};</code></pre><p>直接尝试绑定Pet::set将导致错误，因为编译器不知道用户打算选择哪种方法,可以使用函数指针来消除歧义</p><pre><code class="language-cpp">#include &lt;pybind11/pybind11.h&gt;
+
+namespace py = pybind11;
+
+struct Pet {
+    Pet(const std::string &name, int age) : name(name), age(age) { }
+    void set(int age_) { 
+        printf("called set of age\n");
+        age = age_;
+    }
+    void set(const std::string &name_) {
+        printf("called set of name\n");
+        name = name_;
+    }
+    std::string name;
+    int age;
+};
+
+PYBIND11_MODULE(cla, m) {
+    py::class_&lt;Pet&gt;(m, "Pet")
+        .def(py::init&lt;const std::string &, int&gt;())
+        .def("set", static_cast&lt;void (Pet::*)(int)&gt;(&Pet::set), "Set the pet's age")
+        .def("set", static_cast&lt;void (Pet::*)(const std::string &)&gt;(&Pet::set), "Set the pet's name");
+}</code></pre><pre><code class="language-python">import cla
+
+p = cla.Pet("Monika",18)
+p.set("Billy")
+p.set(20)
+
+# called set of name
+# called set of age</code></pre></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../pybind11/基础语法","../../pybind11/构建系统","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>
