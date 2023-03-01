@@ -15,6 +15,7 @@
         "-I/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
         "-I/home/kamilu/gem5-cxl/ext/nomali/include",
         "-I/home/kamilu/gem5-cxl/ext/pybind11/include",
+        "-I/usr/include/python3.10",
         "-D TRACING_ON",
         "-std=c++17"
     ]

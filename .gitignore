@@ -31,3 +31,6 @@ m5out
 configs/example/memcheck.cfg
 configs/dram/lowp_sweep.cfg
 .pyenv
+/full-system-image
+/fs-result
+.vscode/

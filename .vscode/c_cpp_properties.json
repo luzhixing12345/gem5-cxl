@@ -3,7 +3,17 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/usr/include",
+                "/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
+                "/usr/include/hdf5/serial",
+                "/home/kamilu/sst/include",
+                "/home/kamilu/gem5-cxl/ext/fputils/include/",
+                "/home/kamilu/gem5-cxl/ext/googletest/googlemock/include",
+                "/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
+                "/home/kamilu/gem5-cxl/ext/nomali/include",
+                "/home/kamilu/gem5-cxl/ext/pybind11/include",
+                "/usr/include/python3.10"
             ],
             "defines": [
                 "TRACING_ON"

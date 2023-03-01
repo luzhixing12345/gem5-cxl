@@ -51,7 +51,7 @@
 #include <sst/outgoing_request_bridge.hh>
 #include <sst/sst_responder_interface.hh>
 
-
+#include "sst_responder_subcomponent.hh"
 
 class SSTResponderSubComponent;
 
