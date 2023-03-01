@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "condition_variable": "cpp"
+    },
+    "clangd.fallbackFlags": [
+        "-I/home/kamilu/gem5-cxl/include",
+        "-I/home/kamilu/gem5-cxl/src",
+        "-I/home/kamilu/gem5-cxl/build/X86",
+        "-I/usr/include",
+        "-I/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
+        "-I/usr/include/hdf5/serial",
+        "-I/home/kamilu/sst/include",
+        "-I/home/kamilu/gem5-cxl/ext/fputils/include/",
+        "-I/home/kamilu/gem5-cxl/ext/googletest/googlemock/include",
+        "-I/home/kamilu/gem5-cxl/ext/googletest/googletest/include",
+        "-I/home/kamilu/gem5-cxl/ext/nomali/include",
+        "-I/home/kamilu/gem5-cxl/ext/pybind11/include",
+        "-D TRACING_ON",
+        "-std=c++17"
+    ]
+}
