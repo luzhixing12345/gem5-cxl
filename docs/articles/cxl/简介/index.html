@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Document
+    </title>
+    <link rel='stylesheet' href=../../../css/prism.css /><link rel='stylesheet' href=../../../css/index.css />
+    <link rel="icon" href="https://raw.githubusercontent.com/learner-lu/picbed/master/logo.png">
+</head>
+
+<body class="light">
+    <div class='markdown-body'><h1>简介</h1><p>CXL是一种新型的计算机总线技术，全称为Compute Express Link。它是由Intel、AMD和ARM等公司联合开发的，旨在通过高带宽、低延迟的直接内存访问（DMA）来改善计算机系统的性能。</p><p>CXL支持多种类型的设备，包括加速卡、存储器扩展卡和网络适配器等。与其他总线技术相比，CXL的特点在于其提供了一种直接访问主机内存的机制，这使得CXL设备能够以非常高的速度进行数据交换和处理。</p><p>CXL还支持缓存一致性协议，这意味着在多个设备之间共享数据时，它们都能够看到最新的数据，而不会出现数据不一致的问题</p><ul><li><a href="https://www.computeexpresslink.org/" target="_blank">cxl offical</a></li></ul><ul><li><a href="https://www.computeexpresslink.org/download-the-specification" target="_blank">cxl 规范</a></li></ul><ul><li><a href="https://www.ccixconsortium.com/" target="_blank">开源项目CCIX</a></li></ul><ul><li><a href="https://www.rambus.com/blogs/compute-express-link/" target="_blank">https://www.rambus.com/blogs/compute-express-link/</a></li></ul><h2>发展现状</h2><p><a href="https://cxl.docs.kernel.org/" target="_blank">https://cxl.docs.kernel.org/</a></p><h3>Linux</h3><p>Linux已经支持了CXL技术。自Linux 5.10版本起，内核已经包括了CXL的驱动程序，可以在支持CXL的硬件平台上使用</p><p>CXL驱动程序为用户空间提供了CXL设备的访问接口，并支持CXL内存、CXL缓存和CXL I/O设备等。此外，Linux还提供了一些工具，例如cxlmem和cxlfpga，用于管理和监控CXL内存和CXL FPGA等设备。</p><ul><li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/cxl" target="_blank">linux cxl driver</a></li></ul><ul><li><a href="https://www.kernel.org/doc/html/latest/driver-api/cxl/memory-devices.html" target="_blank">cxl 内存设备</a></li></ul><ul><li><a href="https://www.kernel.org/doc/html/latest/powerpc/cxl.html" target="_blank">cxl 加速器接口</a></li></ul><h3>QEMU</h3><p>QEMU社区正在进行关于CXL的相关工作，但目前该功能尚未被纳入QEMU的主线代码，但是可以通过修改QEMU源代码来添加CXL支持。具体来说，需要添加CXL虚拟设备的驱动程序，并修改QEMU的PCI总线实现，以便识别和管理CXL设备。</p><p>不过需要注意的是，由于CXL是一种相对较新的技术，因此QEMU的CXL支持可能还不够完善或稳定。此外，CXL设备的模拟也需要消耗更多的计算资源，因此可能会对系统性能产生一定的影响。</p><p>总之，如果需要在虚拟化环境中使用CXL设备，可以考虑使用支持CXL技术的物理机或使用虚拟机监控程序（如KVM）的直通功能，以避免由于模拟CXL设备而带来的性能问题。</p><ul><li><a href="https://www.qemu.org/docs/master/system/devices/cxl.html" target="_blank">qemu+cxl</a><ul><li><a href="https://github.com/qemu/qemu/blob/master/docs/system/devices/cxl.rst" target="_blank">github repo</a></li></ul></li></ul><ul><li><a href="https://zhuanlan.zhihu.com/p/514842766" target="_blank">qemu模拟cxl</a></li></ul><ul><li><a href="https://lore.kernel.org/linux-cxl/20220513053724-mutt-send-email-mst@kernel.org/T/#t" target="_blank">cxl讨论</a></li></ul></div>
+    <div class="dir-tree"><ul><li><a href="../../md-docs/README" >README</a></li></ul><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5的编译和使用</a><ul><li><a href="../../gem5的编译和使用/gem5简介" >gem5简介</a></li></ul><ul><li><a href="../../gem5的编译和使用/安装与构建" >安装与构建</a></li></ul><ul><li><a href="../../gem5的编译和使用/第一个程序" >第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/关于第一个程序" >关于第一个程序</a></li></ul><ul><li><a href="../../gem5的编译和使用/全系统模拟" >全系统模拟</a></li></ul><ul><li><a href="../../gem5的编译和使用/linux-kernel构建" >linux-kernel构建</a></li></ul></li></ul><ul><li><a href="../../gem5源码分析/环境配置" >gem5源码分析</a><ul><li><a href="../../gem5源码分析/环境配置" >环境配置</a></li></ul><ul><li><a href="../../gem5源码分析/gem5启动流程" >gem5启动流程</a></li></ul></li></ul><ul><li><a href="../../cxl/简介" >cxl</a><ul><li><a href="../../cxl/简介" >简介</a></li></ul></li></ul><ul><li><a href="../../pybind11/环境配置" >pybind11</a><ul><li><a href="../../pybind11/环境配置" >环境配置</a></li></ul><ul><li><a href="../../pybind11/基础语法" >基础语法</a></li></ul><ul><li><a href="../../pybind11/面向对象" >面向对象</a></li></ul><ul><li><a href="../../pybind11/构建系统" >构建系统</a></li></ul></li></ul></div>
+    <div class="zood"><a class="" href="https://github.com/luzhixing12345/zood" target="_blank">zood</a></div>
+    <script type="text/javascript" src="../../../js/next_front.js"></script><script>addLink("../../gem5源码分析/gem5启动流程","../../pybind11/环境配置","ab")</script><script type="text/javascript" src="../../../js/change_mode.js"></script><script>addChangeModeButton("../../../img/sun.png","../../../img/moon.png")</script><script type="text/javascript" src="../../../js/copy_code.js"></script><script>addCodeCopy("../../../img/before_copy.png","../../../img/after_copy.png")</script><script type="text/javascript" src="../../../js/prism.js"></script><script type="text/javascript" src="../../../js/picture_preview.js"></script><script type="text/javascript" src="../../../js/check_box.js"></script>
+    <script type="module">
+        const codeBlocks = document.querySelectorAll('.language-mermaid');
+        codeBlocks.forEach(codeBlock => {
+            codeBlock.classList.remove('language-mermaid');
+            codeBlock.classList.add('mermaid');
+        });
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

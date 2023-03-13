@@ -296,6 +296,15 @@ blockquote {
   line-height: 1.25;
 }
 
+.markdown-body > ul:has(input) {
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body  ul:has(input) {
+    list-style-type: none;
+}
+
 .markdown-body img {
   max-width: 80%;
   display: block;
